@@ -1,0 +1,20 @@
+{
+  "name": "hapi-stateless-notifications",
+  "version": "1.0.0",
+  "description": "A simple, explicit-state plugin to pass notices between pages.",
+  "main": "index.js",
+  "keywords": [
+    "hapi",
+    "plugin",
+    "notification",
+    "redis",
+    "REST",
+    "stateless"
+  ],
+  "author": "Aria Stewart <aredridel@dinhe.net>",
+  "license": "ISC",
+  "dependencies": {
+    "promise.allrejected": "^1.0.0",
+    "token-facilitator": "^2.1.1"
+  }
+}
