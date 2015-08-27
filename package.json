@@ -16,5 +16,13 @@
   "dependencies": {
     "promise.allrejected": "^1.0.0",
     "token-facilitator": "^2.1.1"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aredridel/hapi-stateless-notifications.git"
+  },
+  "bugs": {
+    "url": "https://github.com/aredridel/hapi-stateless-notifications/issues"
+  },
+  "homepage": "https://github.com/aredridel/hapi-stateless-notifications#readme"
 }
