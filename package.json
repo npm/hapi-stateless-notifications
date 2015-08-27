@@ -15,7 +15,7 @@
   "license": "ISC",
   "dependencies": {
     "promise.allrejected": "^1.0.0",
-    "token-facilitator": "^2.1.1"
+    "token-facilitator": "^2.2.0"
   },
   "repository": {
     "type": "git",

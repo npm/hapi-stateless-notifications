@@ -22,22 +22,36 @@ exports.register = function(server, options, next) {
   server.ext('onPreResponse', function(request, reply) {
     if (request.query.notice) {
 
-      var hash = crypto.createHash('sha1').update(request.query.notice).digest('hex');
-      P.promisify(request.redis.get, request.redis)('notice:' + hash ).then(function(e) {
-        var data = JSON.parse(e);
+      request.logger.info("checking for notices", request.query.notice);
 
-        if (!data) {
-            request.logger.info("No notices");
-            return;
-        }
+      var facilitator = new TokenFacilitator({
+        redis: request.redis
+      });
 
-        if (data.token != request.query.notice) {
-          throw new VError("Token mismatch: %j vs %j", data.token, request.query.notice);
+      P.promisify(facilitator.read, facilitator)(request.query.notice, {
+        prefix: options.prefix || 'notice:'
+      }).then(function(data) {
+        if (!data || !data.notices || !data.notices.length) {
+          request.logger.info("No notices");
+          return;
         }
 
         request.logger.info("Found notices", data);
 
-        request.response.source.context.notices = data.notices;
+        if (request.response.variety === 'view') {
+            if (!request.response.source) {
+                request.response.source = {};
+            }
+
+            if (!request.response.source.context) {
+                request.response.source.context = {};
+            }
+
+            request.response.source.context.notices = data.notices;
+        }
+      }).catch(function(e) {
+        request.logger.error(e);
+        throw e;
       }).then(function() {
         reply.continue();
       }, reply).done();
