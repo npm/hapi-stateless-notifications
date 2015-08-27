@@ -17,6 +17,9 @@
     "promise.allrejected": "^1.0.0",
     "token-facilitator": "^2.2.0"
   },
+  "scripts": {
+    "test": "tap test.js"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/aredridel/hapi-stateless-notifications.git"
@@ -24,5 +27,11 @@
   "bugs": {
     "url": "https://github.com/aredridel/hapi-stateless-notifications/issues"
   },
-  "homepage": "https://github.com/aredridel/hapi-stateless-notifications#readme"
+  "homepage": "https://github.com/aredridel/hapi-stateless-notifications#readme",
+  "devDependencies": {
+    "handlebars": "^2.0.0",
+    "hapi": "^8.8.1",
+    "redis": "^0.12.1",
+    "tap": "^1.3.2"
+  }
 }
