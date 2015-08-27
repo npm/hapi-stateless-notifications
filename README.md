@@ -21,7 +21,10 @@ Then in a handler:
 ```
 request.saveNotifications([
     Promise.reject("Error message here")
-]);
+]).then(function (token) {
+    // if there's a token, put it in the query of the page you load next as `notice={token}`
+    // Otherwise, there's nothing to do.
+});
 ```
 
 Any rejected promises will be collected and their error messages displayed.
