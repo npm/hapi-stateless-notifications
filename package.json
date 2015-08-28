@@ -22,12 +22,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/aredridel/hapi-stateless-notifications.git"
+    "url": "git+https://github.com/npm/hapi-stateless-notifications.git"
   },
   "bugs": {
-    "url": "https://github.com/aredridel/hapi-stateless-notifications/issues"
+    "url": "https://github.com/npm/hapi-stateless-notifications/issues"
   },
-  "homepage": "https://github.com/aredridel/hapi-stateless-notifications#readme",
+  "homepage": "https://github.com/npm/hapi-stateless-notifications#readme",
   "devDependencies": {
     "handlebars": "^2.0.0",
     "hapi": "^8.8.1",
