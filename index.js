@@ -20,7 +20,7 @@ exports.register = function(server, options, next) {
   });
 
   server.ext('onPreResponse', function(request, reply) {
-    if (request.query.notice) {
+    if (request.query[options.queryParameter || 'notice']) {
 
       request.logger.info("checking for notices", request.query.notice);
 
