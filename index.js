@@ -2,6 +2,7 @@ var P = require('bluebird');
 var TokenFacilitator = require('token-facilitator');
 var collectFailures = require('promise.allrejected');
 var crypto = require('crypto');
+var bole = require('bole');
 
 exports.register = function(server, options, next) {
   options = options || {};
@@ -21,8 +22,13 @@ exports.register = function(server, options, next) {
 
   server.ext('onPreResponse', function(request, reply) {
     if (request.query.notice) {
+      if (!request.redis) {
+        throw new Error("request.redis is not defined; set up a plugin that provides that");
+      }
 
-      request.logger.info("checking for notices", request.query.notice);
+      var logger = bole(request.id);
+
+      logger.info("checking for notices", request.query.notice);
 
       var facilitator = new TokenFacilitator({
         redis: request.redis
@@ -32,25 +38,25 @@ exports.register = function(server, options, next) {
         prefix: options.prefix || 'notice:'
       }).then(function(data) {
         if (!data || !data.notices || !data.notices.length) {
-          request.logger.info("No notices");
+          logger.info("No notices");
           return;
         }
 
-        request.logger.info("Found notices", data);
+        logger.info("Found notices", data);
 
         if (request.response.variety === 'view') {
-            if (!request.response.source) {
-                request.response.source = {};
-            }
+          if (!request.response.source) {
+            request.response.source = {};
+          }
 
-            if (!request.response.source.context) {
-                request.response.source.context = {};
-            }
+          if (!request.response.source.context) {
+            request.response.source.context = {};
+          }
 
-            request.response.source.context.notices = data.notices;
+          request.response.source.context.notices = data.notices;
         }
       }).catch(function(e) {
-        request.logger.error(e);
+        logger.error(e);
         throw e;
       }).then(function() {
         reply.continue();

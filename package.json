@@ -17,6 +17,7 @@
   "author": "npm, Inc. <support@npmjs.com>",
   "license": "ISC",
   "dependencies": {
+    "bole": "^2.0.0",
     "promise.allrejected": "^1.0.0",
     "token-facilitator": "^2.2.0"
   },
