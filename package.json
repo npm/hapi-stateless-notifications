@@ -1,6 +1,6 @@
 {
   "name": "hapi-stateless-notifications",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "A simple, explicit-state plugin to pass notices between pages.",
   "main": "index.js",
   "keywords": [
