@@ -11,7 +11,10 @@
     "REST",
     "stateless"
   ],
-  "author": "Aria Stewart <aredridel@dinhe.net>",
+  "contributors": [
+    "Aria Stewart <aredridel@dinhe.net>"
+  ],
+  "author": "npm, Inc. <support@npmjs.com>",
   "license": "ISC",
   "dependencies": {
     "promise.allrejected": "^1.0.0",
