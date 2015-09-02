@@ -2,6 +2,7 @@ var test = require('tap').test;
 var redis = require('redis');
 var Hapi = require('hapi');
 var noticePlugin = require('./');
+var Promise = require('bluebird');
 
 test('does it work?', function (t) {
     var client = redis.createClient(6379, '127.0.0.1');
