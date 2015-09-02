@@ -11,10 +11,21 @@ Use
 // client connection, ready to use for this request. We steal the
 // connection from `catbox-redis`.
 
-server.register(require('hapi-stateless-notifications'));
-
-
+server.register({
+    register: require('hapi-stateless-notifications'),
+    options: {
+        queryParameter: 'notice',
+        prefix: 'notice:',
+        timeout: 3600
+    }
+});
 ```
+
+The `options` are optional.
+
+`options.queryParameter` controls which query parameter will cause the plugin to look up a token and defaults to `'notice'`
+`options.prefix` controls the key prefix in redis, and defaults to `'notice:'`
+`options.timeout` controls the the expiration timeout of the key in redis, in seconds. The default is `3600`, that is, one hour.
 
 Then in a handler:
 
