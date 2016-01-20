@@ -26,7 +26,8 @@ test('does it work?', function (t) {
                 t.ok(request.saveNotifications, 'found method');
 
                 request.saveNotifications([
-                    Promise.reject('boom')
+                    Promise.resolve('yay'),
+                    Promise.reject('boom'),
                 ]).then(function (token) {
                     t.ok(token, 'got token');
                     reply(token);
@@ -69,7 +70,11 @@ test('does it work?', function (t) {
             var token = res.result;
             t.ok(token);
             server.inject({ method: "GET", url: '/2?notice=' + token}, function (res) {
-                t.equal(res.result.trim(), 'notice: boom');
+                var renderedNotices = res.result.trim().split('\n').map(function(value) {
+                    return value.trim();
+                })
+                t.equal(renderedNotices[0], 'success notice: yay');
+                t.equal(renderedNotices[1], 'error notice: boom');
                 server.stop();
                 client.quit();
                 t.end();
