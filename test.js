@@ -28,6 +28,8 @@ test('does it work?', function (t) {
                 request.saveNotifications([
                     Promise.resolve('yay'),
                     Promise.reject('boom'),
+                    Promise.reject(''),
+                    Promise.resolve()
                 ]).then(function (token) {
                     t.ok(token, 'got token');
                     reply(token);
@@ -75,6 +77,7 @@ test('does it work?', function (t) {
                 })
                 t.equal(renderedNotices[0], 'success notice: yay');
                 t.equal(renderedNotices[1], 'error notice: boom');
+                t.equal(renderedNotices.length, 2);
                 server.stop();
                 client.quit();
                 t.end();

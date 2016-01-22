@@ -47,6 +47,7 @@ exports.register = function(server, options, next) {
           return;
         }
 
+
         request.logger.info("Found notices", data);
 
         if (request.response.variety === 'view') {
@@ -58,13 +59,17 @@ exports.register = function(server, options, next) {
                 request.response.source.context = {};
             }
 
+            var notices = data.notices.filter(function(notice){
+              return typeof notice.notice !== "undefined" && !!notice.notice;
+            });
+
             Object.assign(request.response.source.context, {
-              errorNotices: data.notices.filter(function(notice) {
+              errorNotices: notices.filter(function(notice) {
                 return notice.type === 'error';
               }).map(function(notice) {
                 return notice.notice;
               }),
-              successNotices: data.notices.filter(function(notice) {
+              successNotices: notices.filter(function(notice) {
                 return notice.type === 'success';
               }).map(function(notice) {
                 return notice.notice;
