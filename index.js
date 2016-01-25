@@ -1,6 +1,5 @@
 var P = require('bluebird');
 var TokenFacilitator = require('token-facilitator');
-var collectFailures = require('promise.allrejected');
 var crypto = require('crypto');
 
 exports.register = function(server, options, next) {
@@ -13,7 +12,19 @@ exports.register = function(server, options, next) {
     }
 
     request.saveNotifications = function(promises) {
-      return collectFailures(promises).then(putErrorsInRedis(request.redis, options));
+      return P.all(promises.map(function(promise) {
+        return P.resolve(promise).then(function(successNotice) {
+          return P.resolve({
+            notice: successNotice,
+            type: 'success'
+          });
+        }).catch(function(errorNotice) {
+          return P.resolve({
+            notice: errorNotice,
+            type: 'error'
+          });
+        });
+      })).then(putNoticesInRedis(request.redis, options));
     };
 
     return reply.continue();
@@ -36,6 +47,7 @@ exports.register = function(server, options, next) {
           return;
         }
 
+
         request.logger.info("Found notices", data);
 
         if (request.response.variety === 'view') {
@@ -47,7 +59,22 @@ exports.register = function(server, options, next) {
                 request.response.source.context = {};
             }
 
-            request.response.source.context.notices = data.notices;
+            var notices = data.notices.filter(function(notice){
+              return typeof notice.notice !== "undefined" && !!notice.notice;
+            });
+
+            Object.assign(request.response.source.context, {
+              errorNotices: notices.filter(function(notice) {
+                return notice.type === 'error';
+              }).map(function(notice) {
+                return notice.notice;
+              }),
+              successNotices: notices.filter(function(notice) {
+                return notice.type === 'success';
+              }).map(function(notice) {
+                return notice.notice;
+              })
+            });
         }
       }).catch(function(e) {
         request.logger.error(e);
@@ -64,14 +91,14 @@ exports.register = function(server, options, next) {
   return next();
 };
 
-function putErrorsInRedis(redis, options) {
-  return function(errors) {
-    if (errors.length) {
+function putNoticesInRedis(redis, options) {
+  return function(notices) {
+    if (notices.length) {
       var facilitator = new TokenFacilitator({
         redis: redis
       });
       return P.promisify(facilitator.generate, facilitator)({
-        notices: errors
+        notices: notices
       }, {
         timeout: options.timeout || 3600,
         prefix: options.prefix || 'notice:'
