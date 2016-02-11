@@ -18,9 +18,9 @@ exports.register = function(server, options, next) {
             notice: successNotice,
             type: 'success'
           });
-        }).catch(function(errorNotice) {
+        }).catch(function(error) {
           return P.resolve({
-            notice: errorNotice,
+            notice: error.message,
             type: 'error'
           });
         });
@@ -35,11 +35,9 @@ exports.register = function(server, options, next) {
 
       request.logger.info("checking for notices", request.query.notice);
 
-      var facilitator = new TokenFacilitator({
-        redis: request.redis
-      });
+      var facilitator = new TokenFacilitator({redis: request.redis});
 
-      P.promisify(facilitator.read, facilitator)(request.query.notice, {
+      P.promisify(facilitator.read, {context: facilitator})(request.query.notice, {
         prefix: options.prefix || 'notice:'
       }).then(function(data) {
         if (!data || !data.notices || !data.notices.length) {
@@ -97,9 +95,7 @@ function putNoticesInRedis(redis, options) {
       var facilitator = new TokenFacilitator({
         redis: redis
       });
-      return P.promisify(facilitator.generate, facilitator)({
-        notices: notices
-      }, {
+      return P.promisify(facilitator.generate, {context: facilitator})({notices: notices}, {
         timeout: options.timeout || 3600,
         prefix: options.prefix || 'notice:'
       });

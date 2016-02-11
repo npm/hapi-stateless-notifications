@@ -27,9 +27,9 @@ test('does it work?', function (t) {
 
                 request.saveNotifications([
                     Promise.resolve('yay'),
-                    Promise.reject('boom'),
-                    Promise.reject(''),
-                    Promise.resolve()
+                    Promise.reject(new Error('boom')),
+                    Promise.reject(new Error('')),
+                    Promise.resolve(),
                 ]).then(function (token) {
                     t.ok(token, 'got token');
                     reply(token);
