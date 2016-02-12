@@ -32,7 +32,7 @@ Then in a handler:
 ```
 request.saveNotifications([
     Promise.resolve('Success message here ...'),
-    Promise.reject('Error message here ...'),
+    Promise.reject(new Error('Error message here ...')),
 ]).then(function (token) {
     // if there's a token, put it in the query of the page you load next as `notice={token}`
     // Otherwise, there's nothing to do.
