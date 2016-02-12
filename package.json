@@ -18,7 +18,6 @@
   "license": "ISC",
   "dependencies": {
     "bluebird": "^2.10.2",
-    "promise.allrejected": "^1.0.0",
     "token-facilitator": "^2.2.0"
   },
   "scripts": {
