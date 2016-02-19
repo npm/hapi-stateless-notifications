@@ -1,6 +1,7 @@
 var P = require('bluebird');
 var TokenFacilitator = require('token-facilitator');
 var crypto = require('crypto');
+var debug = require('debuglog')('hapi-stateless-notifications');
 
 exports.register = function(server, options, next) {
   options = options || {};
@@ -14,17 +15,25 @@ exports.register = function(server, options, next) {
     request.saveNotifications = function(promises) {
       return P.all(promises.map(function(promise) {
         return P.resolve(promise).then(function(successNotice) {
+          debug("Success '%s' for request '%s'", successNotice, request.id);
           return P.resolve({
             notice: successNotice,
             type: 'success'
           });
         }).catch(function(error) {
+          debug("Error '%s' for request '%s'", error.message, request.id);
           return P.resolve({
             notice: error.message,
             type: 'error'
           });
         });
-      })).then(putNoticesInRedis(request.redis, options));
+      })).then(putNoticesInRedis(request.redis, options)).then(function (token) {
+        debug("Saved to redis for '%s' with token '%s'", request.id, token);
+        return token;
+      }, function (err) {
+        debug("Error saving to redis for '%s'", request.id);
+        throw err;
+      });
     };
 
     return reply.continue();
@@ -44,7 +53,6 @@ exports.register = function(server, options, next) {
           request.logger.info("No notices");
           return;
         }
-
 
         request.logger.info("Found notices", data);
 
