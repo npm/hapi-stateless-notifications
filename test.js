@@ -33,6 +33,9 @@ test('does it work?', function (t) {
                 ]).then(function (token) {
                     t.ok(token, 'got token');
                     reply(token);
+                }).catch(function (err) {
+                    t.error(err);
+                    reply(err);
                 });
             }
         },
