@@ -35,7 +35,7 @@
   "devDependencies": {
     "handlebars": "^2.0.0",
     "hapi": "^8.8.1",
-    "redis": "^0.12.1",
+    "redis": "^2.5.3",
     "tap": "^5.1.1"
   }
 }
