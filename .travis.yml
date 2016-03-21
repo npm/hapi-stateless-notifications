@@ -1,0 +1,14 @@
+sudo: false
+language: node_js
+node_js:
+  - "4.2"
+  - "5"
+notifications:
+  email: false
+before_install:
+  - "npm install -g npm@latest"
+install:
+  - npm install --cache-min=600
+cache:
+  directories:
+    - $HOME/.npm
