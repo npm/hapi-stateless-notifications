@@ -17,7 +17,7 @@
   "author": "npm, Inc. <support@npmjs.com>",
   "license": "ISC",
   "dependencies": {
-    "bluebird": "^3.0.5",
+    "bluebird": "^3.3.4",
     "debuglog": "^1.0.1",
     "token-facilitator": "^2.2.0"
   },
