@@ -19,7 +19,7 @@
   "dependencies": {
     "bluebird": "^3.0.5",
     "debuglog": "^1.0.1",
-    "token-facilitator": "^2.2.0"
+    "token-facilitator": "^3.0.0"
   },
   "scripts": {
     "test": "tap test.js"

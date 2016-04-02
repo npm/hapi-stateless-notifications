@@ -46,7 +46,7 @@ exports.register = function(server, options, next) {
 
       var facilitator = new TokenFacilitator({redis: request.redis});
 
-      P.promisify(facilitator.read, {context: facilitator})(request.query.notice, {
+      facilitator.read(request.query.notice, {
         prefix: options.prefix || 'notice:'
       }).then(function(data) {
         if (!data || !data.notices || !data.notices.length) {
@@ -103,7 +103,7 @@ function putNoticesInRedis(redis, options) {
       var facilitator = new TokenFacilitator({
         redis: redis
       });
-      return P.promisify(facilitator.generate, {context: facilitator})({notices: notices}, {
+      return facilitator.generate({notices: notices}, {
         timeout: options.timeout || 3600,
         prefix: options.prefix || 'notice:'
       });
