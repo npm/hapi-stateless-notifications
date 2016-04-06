@@ -9,45 +9,49 @@ test('does it work?', function (t) {
 
     var server = new Hapi.Server();
     server.connection({ autoListen: false });
-    server.views({
-        engines: {
-            hbs: require('handlebars')
-        },
-        relativeTo: __dirname,
-        path: './test-templates',
-        layoutPath: './test-templates'
+    server.register(require('vision'), err => {
+        t.error(err);
+
+        server.views({
+            engines: {
+                hbs: require('handlebars')
+            },
+            relativeTo: __dirname,
+            path: './test-templates',
+            layoutPath: './test-templates'
+        });
+
+        server.route([
+            {
+                method: 'GET',
+                path: '/1',
+                handler: function (request, reply) {
+                    t.ok(request.saveNotifications, 'found method');
+
+                    request.saveNotifications([
+                        Promise.resolve('yay'),
+                        Promise.reject(new Error('boom')),
+                        Promise.reject(new Error('')),
+                        Promise.resolve(),
+                    ]).then(function (token) {
+                        t.ok(token, 'got token');
+                        reply(token);
+                    }).catch(function (err) {
+                        t.error(err);
+                        reply(err);
+                    });
+                }
+            },
+            {
+                method: 'GET',
+                path: '/2',
+                handler: function (request, reply) {
+                    t.ok(request.query.notice, 'got param');
+                    reply.view('notices');
+                }
+            }
+        ]);
     });
-
-    server.route([
-        {
-            method: 'GET',
-            path: '/1',
-            handler: function (request, reply) {
-                t.ok(request.saveNotifications, 'found method');
-
-                request.saveNotifications([
-                    Promise.resolve('yay'),
-                    Promise.reject(new Error('boom')),
-                    Promise.reject(new Error('')),
-                    Promise.resolve(),
-                ]).then(function (token) {
-                    t.ok(token, 'got token');
-                    reply(token);
-                }).catch(function (err) {
-                    t.error(err);
-                    reply(err);
-                });
-            }
-        },
-        {
-            method: 'GET',
-            path: '/2',
-            handler: function (request, reply) {
-                t.ok(request.query.notice, 'got param');
-                reply.view('notices');
-            }
-        }
-    ]);
 
     function setup(server, options, next) {
         server.ext('onPreHandler', function (request, reply) {
