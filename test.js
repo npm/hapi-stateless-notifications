@@ -2,6 +2,7 @@
 const test = require('tap').test;
 const redis = require('redis');
 const Hapi = require('hapi');
+const Vision = require('vision');
 const noticePlugin = require('./');
 const Promise = require('bluebird');
 
@@ -10,14 +11,6 @@ test('does it work?', t => {
 
     const server = new Hapi.Server();
     server.connection({ autoListen: false });
-    server.views({
-        engines: {
-            hbs: require('handlebars')
-        },
-        relativeTo: __dirname,
-        path: './test-templates',
-        layoutPath: './test-templates'
-    });
 
     server.route([
         {
@@ -68,9 +61,19 @@ test('does it work?', t => {
     };
 
     server.register([
+        Vision,
         setup,
         noticePlugin
     ], () => {
+        server.views({
+            engines: {
+                hbs: require('handlebars')
+            },
+            relativeTo: __dirname,
+            path: './test-templates',
+            layoutPath: './test-templates'
+        });
+
         server.inject({ method: 'GET', url: '/1' }, res => {
             const token = res.result;
             t.ok(token);
