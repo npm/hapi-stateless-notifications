@@ -34,8 +34,23 @@
   "homepage": "https://github.com/npm/hapi-stateless-notifications#readme",
   "devDependencies": {
     "handlebars": "^2.0.0",
-    "hapi": "^8.8.1",
+    "hapi": "^15.2.0",
     "redis": "^2.5.3",
-    "tap": "^7.1.2"
+    "tap": "^7.1.2",
+    "vision": "^4.1.0"
+  },
+  "eslintConfig": {
+    "parserOptions": {
+      "ecmaVersion": 6
+    },
+    "rules": {
+      "valid-typeof": "error",
+      "no-undef": "error",
+      "no-unused-vars": "error"
+    },
+    "env": {
+      "browser": true,
+      "node": true
+    }
   }
 }
