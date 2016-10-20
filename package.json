@@ -37,5 +37,19 @@
     "hapi": "^8.8.1",
     "redis": "^2.5.3",
     "tap": "^7.1.2"
+  },
+  "eslintConfig": {
+    "parserOptions": {
+      "ecmaVersion": 6
+    },
+    "rules": {
+      "valid-typeof": "error",
+      "no-undef": "error",
+      "no-unused-vars": "error"
+    },
+    "env": {
+      "browser": true,
+      "node": true
+    }
   }
 }
