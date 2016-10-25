@@ -36,7 +36,7 @@
     "handlebars": "^2.0.0",
     "hapi": "^15.2.0",
     "redis": "^2.5.3",
-    "tap": "^7.1.2",
+    "tap": "^8.0.0",
     "vision": "^4.1.0"
   },
   "eslintConfig": {
