@@ -5,6 +5,7 @@ const Hapi = require('hapi');
 const Vision = require('vision');
 const noticePlugin = require('./');
 const Promise = require('bluebird');
+const url = require('url');
 const withFixtures = require('with-fixtures');
 
 test('does it work?', t => {
@@ -24,12 +25,67 @@ test('does it work?', t => {
                     Promise.resolve('yay'),
                     Promise.reject(new Error('boom')),
                     Promise.reject(new Error('')),
+                    Promise.reject(Object.assign(new Error('404'), { statusCode: 404 })),
                     Promise.resolve(),
                 ]).then(token => {
                     t.ok(token, 'got token');
                     reply(token);
                 }).catch(err => {
                     t.error(err);
+                    reply(err);
+                });
+            }
+        },
+        {
+            method: 'GET',
+            path: '/redirect',
+            handler: (request, reply) => {
+                t.ok(reply.redirectAndNotify, 'found method');
+
+                reply.redirectAndNotify([
+                    Promise.resolve('yay'),
+                    Promise.reject(new Error('boom')),
+                    Promise.reject(new Error('')),
+                    Promise.resolve(),
+                ], '/fetch?test=yes')
+                    .catch(err => {
+                        t.error(err);
+                        reply(err);
+                    });
+            }
+        },
+        {
+            method: 'GET',
+            path: '/type-error',
+            handler: (request, reply) => {
+                reply.redirectAndNotify([
+                    Promise.resolve('yay'),
+                    Promise.reject(new TypeError('boom')),
+                    Promise.reject(new Error('')),
+                    Promise.resolve(),
+                ], '/fetch?test=yes')
+                .then(() => {
+                    t.fail("not expecting success")
+                    reply("Fail");
+                }, err => {
+                    reply(err);
+                });
+            }
+        },
+        {
+            method: 'GET',
+            path: '/500-error',
+            handler: (request, reply) => {
+                reply.redirectAndNotify([
+                    Promise.resolve('yay'),
+                    Promise.reject(Object.assign(new Error('boom'), { statusCode: 500 })),
+                    Promise.reject(new Error('')),
+                    Promise.resolve(),
+                ], '/fetch?test=yes')
+                .then(() => {
+                    t.fail("not expecting success")
+                    reply("Fail");
+                }, err => {
                     reply(err);
                 });
             }
@@ -91,9 +147,29 @@ test('does it work?', t => {
             const renderedNotices = res.result.trim().split('\n').map(value => value.trim())
             t.equal(renderedNotices[0], 'success notice: yay');
             t.equal(renderedNotices[1], 'error notice: boom');
+            t.equal(renderedNotices[2], 'error notice: 404');
+            t.equal(renderedNotices.length, 3);
+        })
+        .then(() => server.inject('/redirect'))
+        .then(res => {
+            t.equal(res.statusCode, 302);
+            const token = url.parse(res.headers.location, true).query.notice;
+            t.ok(token, 'got token from redirect');
+            return server.inject({ method: "GET", url: '/fetch?notice=' + token})
+        })
+        .then(res => {
+            const renderedNotices = res.result.trim().split('\n').map(value => value.trim())
+            t.equal(renderedNotices[0], 'success notice: yay');
+            t.equal(renderedNotices[1], 'error notice: boom');
             t.equal(renderedNotices.length, 2);
-        }));
+        })
+        .then(() => server.inject('/type-error'))
+        .then(res => {
+            t.equal(res.statusCode, 500);
+        })
+        .then(() => server.inject('/500-error'))
+        .then(res => {
+            t.equal(res.statusCode, 500);
+        }))
 
 });
-
-

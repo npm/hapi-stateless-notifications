@@ -1,10 +1,14 @@
+"use strict";
+
 var P = require('bluebird');
 var TokenFacilitator = require('token-facilitator');
-var crypto = require('crypto');
 var debug = require('debuglog')('hapi-stateless-notifications');
+var url = require('url');
 
 exports.register = function(server, options, next) {
   options = options || {};
+
+  debug("Registering plugin");
 
   server.ext('onPreHandler', function(request, reply) {
 
@@ -21,6 +25,9 @@ exports.register = function(server, options, next) {
             type: 'success'
           });
         }).catch(function(error) {
+          if ((!error.statusCode && error.constructor != Error) || error.statusCode >= 500) {
+            throw error;
+          }
           debug("Error '%s' for request '%s'", error.message, request.id);
           return P.resolve({
             notice: error.message,
