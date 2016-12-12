@@ -15,7 +15,7 @@ test('does it work?', t => {
     server.route([
         {
             method: 'GET',
-            path: '/1',
+            path: '/basic',
             handler: (request, reply) => {
                 t.ok(request.saveNotifications, 'found method');
 
@@ -35,7 +35,7 @@ test('does it work?', t => {
         },
         {
             method: 'GET',
-            path: '/2',
+            path: '/fetch',
             handler: (request, reply) => {
                 t.ok(request.query.notice, 'got param');
                 reply.view('notices');
@@ -74,10 +74,10 @@ test('does it work?', t => {
             layoutPath: './test-templates'
         });
 
-        server.inject({ method: 'GET', url: '/1' }, res => {
+        server.inject({ method: 'GET', url: '/basic' }, res => {
             const token = res.result;
             t.ok(token);
-            server.inject({ method: "GET", url: '/2?notice=' + token}, res => {
+            server.inject({ method: "GET", url: '/fetch?notice=' + token}, res => {
                 const renderedNotices = res.result.trim().split('\n').map(value => value.trim())
                 t.equal(renderedNotices[0], 'success notice: yay');
                 t.equal(renderedNotices[1], 'error notice: boom');
