@@ -27,9 +27,10 @@ test('does it work?', t => {
                     Promise.reject(new Error('')),
                     Promise.reject(Object.assign(new Error('404'), { statusCode: 404 })),
                     Promise.resolve(),
-                ]).then(token => {
-                    t.ok(token, 'got token');
-                    reply(token);
+                ]).then(data => {
+                    t.ok(data.token, 'got token');
+                    t.equal(data.success, false);
+                    reply(data.token);
                 }).catch(err => {
                     t.error(err);
                     reply(err);
@@ -88,6 +89,26 @@ test('does it work?', t => {
                 }, err => {
                     reply(err);
                 });
+            }
+        },
+        {
+            method: 'GET',
+            path: '/success-redirect',
+            handler: (request, reply) => {
+                reply.redirectAndNotify([
+                    Promise.resolve('yay'),
+                ], { success: '/fetch', failure: '/fail' })
+                    .catch(reply)
+            }
+        },
+        {
+            method: 'GET',
+            path: '/failure-redirect',
+            handler: (request, reply) => {
+                reply.redirectAndNotify([
+                    Promise.reject(new Error('boom')),
+                ], { success: '/fetch', failure: '/fail' })
+                    .catch(reply)
             }
         },
         {
@@ -162,6 +183,34 @@ test('does it work?', t => {
             t.equal(renderedNotices[0], 'success notice: yay');
             t.equal(renderedNotices[1], 'error notice: boom');
             t.equal(renderedNotices.length, 2);
+        })
+        .then(() => server.inject('/success-redirect'))
+        .then(res => {
+            t.equal(res.statusCode, 302);
+            const u = url.parse(res.headers.location, true);
+            const token = u.query.notice;
+            t.equal(u.pathname, '/fetch');
+            t.ok(token, 'got token from redirect');
+            return server.inject({ method: "GET", url: res.headers.location })
+        })
+        .then(res => {
+            const renderedNotices = res.result.trim().split('\n').map(value => value.trim())
+            t.equal(renderedNotices[0], 'success notice: yay');
+            t.equal(renderedNotices.length, 1);
+        })
+        .then(() => server.inject('/failure-redirect'))
+        .then(res => {
+            t.equal(res.statusCode, 302);
+            const u = url.parse(res.headers.location, true);
+            const token = u.query.notice;
+            t.equal(u.pathname, '/fail');
+            t.ok(token, 'got token from redirect');
+            return server.inject({ method: "GET", url: '/fetch?notice=' + token})
+        })
+        .then(res => {
+            const renderedNotices = res.result.trim().split('\n').map(value => value.trim())
+            t.equal(renderedNotices[0], 'error notice: boom');
+            t.equal(renderedNotices.length, 1);
         })
         .then(() => server.inject('/type-error'))
         .then(res => {
