@@ -18,9 +18,9 @@ test('does it work?', t => {
             method: 'GET',
             path: '/basic',
             handler: (request, reply) => {
-                t.ok(request.saveNotifications, 'found method');
+                t.ok(reply.saveNotifications, 'found method');
 
-                request.saveNotifications([
+                reply.saveNotifications([
                     Promise.resolve('yay'),
                     Promise.reject(new Error('boom')),
                     Promise.reject(new Error('')),

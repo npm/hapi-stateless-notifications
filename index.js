@@ -39,6 +39,26 @@ exports.register = function(server, options, next) {
     return reply.continue();
   });
 
+  server.decorate('reply', 'saveNotifications', function (promises) {
+    return this.request.saveNotifications(promises);
+  });
+
+  server.decorate('reply', 'redirectAndNotify', function (promises, targetUrl) {
+    promises = [].concat(promises);
+    var target = url.parse(targetUrl, true);
+    delete target.search; // url.parse and url.format are kind awful
+    var self = this;
+
+    return this.saveNotifications(promises)
+      .then(function (token) {
+        if (token) {
+          target.query.notice = token
+        }
+        self.redirect(url.format(target));
+      })
+  });
+
+
   server.ext('onPreResponse', function(request, reply) {
     if (request.query[options.queryParameter || 'notice']) {
 
