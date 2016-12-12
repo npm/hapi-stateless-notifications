@@ -5,6 +5,7 @@ const Hapi = require('hapi');
 const Vision = require('vision');
 const noticePlugin = require('./');
 const Promise = require('bluebird');
+const withFixtures = require('with-fixtures');
 
 test('does it work?', t => {
     const client = redis.createClient(6379, '127.0.0.1');
@@ -60,7 +61,14 @@ test('does it work?', t => {
         name: 'setup'
     };
 
-    return server.register([
+    const cleanup = {
+        done() {
+            server.stop();
+            client.quit();
+        }
+    };
+
+    return withFixtures([cleanup], () => server.register([
         Vision,
         setup,
         noticePlugin
@@ -76,7 +84,7 @@ test('does it work?', t => {
         .then(() => server.inject({ method: 'GET', url: '/basic' }))
         .then(res => {
             const token = res.result;
-            t.ok(token);
+            t.ok(token, 'got token');
             return server.inject({ method: "GET", url: '/fetch?notice=' + token})
         })
         .then(res => {
@@ -84,9 +92,7 @@ test('does it work?', t => {
             t.equal(renderedNotices[0], 'success notice: yay');
             t.equal(renderedNotices[1], 'error notice: boom');
             t.equal(renderedNotices.length, 2);
-            server.stop();
-            client.quit();
-        });
+        }));
 
 });
 
