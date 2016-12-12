@@ -60,34 +60,33 @@ test('does it work?', t => {
         name: 'setup'
     };
 
-    server.register([
+    return server.register([
         Vision,
         setup,
         noticePlugin
-    ], () => {
-        server.views({
+    ])
+        .then(() => server.views({
             engines: {
                 hbs: require('handlebars')
             },
             relativeTo: __dirname,
             path: './test-templates',
             layoutPath: './test-templates'
-        });
-
-        server.inject({ method: 'GET', url: '/basic' }, res => {
+        }))
+        .then(() => server.inject({ method: 'GET', url: '/basic' }))
+        .then(res => {
             const token = res.result;
             t.ok(token);
-            server.inject({ method: "GET", url: '/fetch?notice=' + token}, res => {
-                const renderedNotices = res.result.trim().split('\n').map(value => value.trim())
-                t.equal(renderedNotices[0], 'success notice: yay');
-                t.equal(renderedNotices[1], 'error notice: boom');
-                t.equal(renderedNotices.length, 2);
-                server.stop();
-                client.quit();
-                t.end();
-            });
+            return server.inject({ method: "GET", url: '/fetch?notice=' + token})
+        })
+        .then(res => {
+            const renderedNotices = res.result.trim().split('\n').map(value => value.trim())
+            t.equal(renderedNotices[0], 'success notice: yay');
+            t.equal(renderedNotices[1], 'error notice: boom');
+            t.equal(renderedNotices.length, 2);
+            server.stop();
+            client.quit();
         });
-    });
 
 });
 
