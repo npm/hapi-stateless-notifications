@@ -47,9 +47,9 @@ exports.register = function(server, options, next) {
         });
       });
     })).then(function (notices) {
-      var anyFailed = Boolean(notices.find(function (n) {
+      var anyFailed = notices.some(function (n) {
         return n.type == 'error';
-      }));
+      });
 
       return putNoticesInRedis(self.request.redis, notices, options).then(function (token) {
         debug("Saved to redis for '%s' with token '%s'", self.request.id, token);
@@ -67,7 +67,6 @@ exports.register = function(server, options, next) {
 
     return this.saveNotifications(promises)
       .then(function (result) {
-        var target;
         if (typeof targetUrl == 'object') {
           targetUrl = targetUrl[result.success ? 'success' : 'failure'];
         }
