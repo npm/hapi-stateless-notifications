@@ -4,6 +4,7 @@ var P = require('bluebird');
 var TokenFacilitator = require('token-facilitator');
 var debug = require('debuglog')('hapi-stateless-notifications');
 var url = require('url');
+var ignoreErrors = [EvalError, RangeError, ReferenceError, SyntaxError, TypeError];
 
 exports.register = function(server, options, next) {
   options = options || {};
@@ -37,7 +38,7 @@ exports.register = function(server, options, next) {
           type: 'success'
         });
       }).catch(function(error) {
-        if ((!error.statusCode && error.constructor != Error) || error.statusCode >= 500) {
+        if ((!error.statusCode && ignoreErrors.indexOf(error.constructor) != -1) || error.statusCode >= 500) {
           throw error;
         }
         debug("Error '%s' for request '%s'", error.message, self.request.id);
