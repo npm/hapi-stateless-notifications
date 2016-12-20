@@ -85,6 +85,9 @@ exports.register = function(server, options, next) {
 
 
   server.ext('onPreResponse', function(request, reply) {
+    // Regenerated requests may not have these. Fail gracefully at least.
+    if (!request.logger || !request.redis) return reply.continue();
+
     if (request.query[options.queryParameter || 'notice']) {
 
       request.logger.info("checking for notices", request.query.notice);
