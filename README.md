@@ -1,7 +1,7 @@
 hapi-stateless-notifications
 ============================
 
-A plugin to give a hapi `reply` a `reply.saveNotifications()` method that collects user notifications and store them long enough to display on later pages, given the token.
+A plugin to handle saving notifications to pass to a following page, so you can redirect after post and all those niceties without having to fall back to session-associated flash messages.
 
 Use
 -----
@@ -30,11 +30,29 @@ The `options` are optional.
 Then in a handler:
 
 ```
-request.saveNotifications([
+reply.saveNotifications([
     Promise.resolve('Success message here ...'),
     Promise.reject(new Error('Error message here ...')),
 ]).then(function (token) {
     // if there's a token, put it in the query of the page you load next as `notice={token}`
     // Otherwise, there's nothing to do.
 });
+```
+
+Or more completely:
+
+```
+reply.redirectAndNotify([
+    Promise.resolve('Success message here ...'),
+    Promise.reject(new Error('Error message here ...')),
+], '/next-page')
+```
+
+or if the failure path leads a different place:
+
+```
+reply.redirectAndNotify([
+    Promise.resolve('Success message here ...'),
+    Promise.reject(new Error('Error message here ...')),
+], { success: '/next-page', failure: '/this-page' })
 ```

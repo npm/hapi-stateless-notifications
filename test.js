@@ -1,39 +1,37 @@
-var test = require('tap').test;
-var redis = require('redis');
-var Hapi = require('hapi');
-var noticePlugin = require('./');
-var Promise = require('bluebird');
+"use strict";
+const test = require('tap').test;
+const redis = require('redis');
+const Hapi = require('hapi');
+const Vision = require('vision');
+const noticePlugin = require('./');
+const Promise = require('bluebird');
+const url = require('url');
+const withFixtures = require('with-fixtures');
 
-test('does it work?', function (t) {
-    var client = redis.createClient(6379, '127.0.0.1');
+test('does it work?', t => {
+    const client = redis.createClient(6379, '127.0.0.1');
 
-    var server = new Hapi.Server();
+    const server = new Hapi.Server();
     server.connection({ autoListen: false });
-    server.views({
-        engines: {
-            hbs: require('handlebars')
-        },
-        relativeTo: __dirname,
-        path: './test-templates',
-        layoutPath: './test-templates'
-    });
 
     server.route([
         {
             method: 'GET',
-            path: '/1',
-            handler: function (request, reply) {
-                t.ok(request.saveNotifications, 'found method');
+            path: '/basic',
+            handler: (request, reply) => {
+                t.ok(reply.saveNotifications, 'found method');
 
-                request.saveNotifications([
+                reply.saveNotifications([
                     Promise.resolve('yay'),
                     Promise.reject(new Error('boom')),
                     Promise.reject(new Error('')),
+                    Promise.reject(Object.assign(new Error('404'), { statusCode: 404 })),
                     Promise.resolve(),
-                ]).then(function (token) {
-                    t.ok(token, 'got token');
-                    reply(token);
-                }).catch(function (err) {
+                ]).then(data => {
+                    t.ok(data.token, 'got token');
+                    t.equal(data.success, false);
+                    reply(data.token);
+                }).catch(err => {
                     t.error(err);
                     reply(err);
                 });
@@ -41,8 +39,82 @@ test('does it work?', function (t) {
         },
         {
             method: 'GET',
-            path: '/2',
-            handler: function (request, reply) {
+            path: '/redirect',
+            handler: (request, reply) => {
+                t.ok(reply.redirectAndNotify, 'found method');
+
+                reply.redirectAndNotify([
+                    Promise.resolve('yay'),
+                    Promise.reject(new Error('boom')),
+                    Promise.reject(new Error('')),
+                    Promise.resolve(),
+                ], '/fetch?test=yes')
+                    .catch(err => {
+                        t.error(err);
+                        reply(err);
+                    });
+            }
+        },
+        {
+            method: 'GET',
+            path: '/type-error',
+            handler: (request, reply) => {
+                reply.redirectAndNotify([
+                    Promise.resolve('yay'),
+                    Promise.reject(new TypeError('boom')),
+                    Promise.reject(new Error('')),
+                    Promise.resolve(),
+                ], '/fetch?test=yes')
+                .then(() => {
+                    t.fail("not expecting success")
+                    reply("Fail");
+                }, err => {
+                    reply(err);
+                });
+            }
+        },
+        {
+            method: 'GET',
+            path: '/500-error',
+            handler: (request, reply) => {
+                reply.redirectAndNotify([
+                    Promise.resolve('yay'),
+                    Promise.reject(Object.assign(new Error('boom'), { statusCode: 500 })),
+                    Promise.reject(new Error('')),
+                    Promise.resolve(),
+                ], '/fetch?test=yes')
+                .then(() => {
+                    t.fail("not expecting success")
+                    reply("Fail");
+                }, err => {
+                    reply(err);
+                });
+            }
+        },
+        {
+            method: 'GET',
+            path: '/success-redirect',
+            handler: (request, reply) => {
+                reply.redirectAndNotify([
+                    Promise.resolve('yay'),
+                ], { success: '/fetch', failure: '/fail' })
+                    .catch(reply)
+            }
+        },
+        {
+            method: 'GET',
+            path: '/failure-redirect',
+            handler: (request, reply) => {
+                reply.redirectAndNotify([
+                    Promise.reject(new Error('boom')),
+                ], { success: '/fetch', failure: '/fail' })
+                    .catch(reply)
+            }
+        },
+        {
+            method: 'GET',
+            path: '/fetch',
+            handler: (request, reply) => {
                 t.ok(request.query.notice, 'got param');
                 reply.view('notices');
             }
@@ -50,11 +122,10 @@ test('does it work?', function (t) {
     ]);
 
     function setup(server, options, next) {
-        server.ext('onPreHandler', function (request, reply) {
+        server.ext('onPreHandler', (request, reply) => {
             request.redis = client;
             request.logger = {
-                info: function() {
-                },
+                info: () => {},
                 error: t.fail
             };
             reply.continue();
@@ -67,27 +138,87 @@ test('does it work?', function (t) {
         name: 'setup'
     };
 
-    server.register([
+    const cleanup = {
+        done() {
+            server.stop();
+            client.quit();
+        }
+    };
+
+    return withFixtures([cleanup], () => server.register([
+        Vision,
         setup,
         noticePlugin
-    ], function (err) {
-        server.inject({ method: 'GET', url: '/1' }, function (res) {
-            var token = res.result;
-            t.ok(token);
-            server.inject({ method: "GET", url: '/2?notice=' + token}, function (res) {
-                var renderedNotices = res.result.trim().split('\n').map(function(value) {
-                    return value.trim();
-                })
-                t.equal(renderedNotices[0], 'success notice: yay');
-                t.equal(renderedNotices[1], 'error notice: boom');
-                t.equal(renderedNotices.length, 2);
-                server.stop();
-                client.quit();
-                t.end();
-            });
-        });
-    });
+    ])
+        .then(() => server.views({
+            engines: {
+                hbs: require('handlebars')
+            },
+            relativeTo: __dirname,
+            path: './test-templates',
+            layoutPath: './test-templates'
+        }))
+        .then(() => server.inject({ method: 'GET', url: '/basic' }))
+        .then(res => {
+            const token = res.result;
+            t.ok(token, 'got token');
+            return server.inject({ method: "GET", url: '/fetch?notice=' + token})
+        })
+        .then(res => {
+            const renderedNotices = res.result.trim().split('\n').map(value => value.trim())
+            t.equal(renderedNotices[0], 'success notice: yay');
+            t.equal(renderedNotices[1], 'error notice: boom');
+            t.equal(renderedNotices[2], 'error notice: 404');
+            t.equal(renderedNotices.length, 3);
+        })
+        .then(() => server.inject('/redirect'))
+        .then(res => {
+            t.equal(res.statusCode, 302);
+            const token = url.parse(res.headers.location, true).query.notice;
+            t.ok(token, 'got token from redirect');
+            return server.inject({ method: "GET", url: '/fetch?notice=' + token})
+        })
+        .then(res => {
+            const renderedNotices = res.result.trim().split('\n').map(value => value.trim())
+            t.equal(renderedNotices[0], 'success notice: yay');
+            t.equal(renderedNotices[1], 'error notice: boom');
+            t.equal(renderedNotices.length, 2);
+        })
+        .then(() => server.inject('/success-redirect'))
+        .then(res => {
+            t.equal(res.statusCode, 302);
+            const u = url.parse(res.headers.location, true);
+            const token = u.query.notice;
+            t.equal(u.pathname, '/fetch');
+            t.ok(token, 'got token from redirect');
+            return server.inject({ method: "GET", url: res.headers.location })
+        })
+        .then(res => {
+            const renderedNotices = res.result.trim().split('\n').map(value => value.trim())
+            t.equal(renderedNotices[0], 'success notice: yay');
+            t.equal(renderedNotices.length, 1);
+        })
+        .then(() => server.inject('/failure-redirect'))
+        .then(res => {
+            t.equal(res.statusCode, 302);
+            const u = url.parse(res.headers.location, true);
+            const token = u.query.notice;
+            t.equal(u.pathname, '/fail');
+            t.ok(token, 'got token from redirect');
+            return server.inject({ method: "GET", url: '/fetch?notice=' + token})
+        })
+        .then(res => {
+            const renderedNotices = res.result.trim().split('\n').map(value => value.trim())
+            t.equal(renderedNotices[0], 'error notice: boom');
+            t.equal(renderedNotices.length, 1);
+        })
+        .then(() => server.inject('/type-error'))
+        .then(res => {
+            t.equal(res.statusCode, 500);
+        })
+        .then(() => server.inject('/500-error'))
+        .then(res => {
+            t.equal(res.statusCode, 500);
+        }))
 
 });
-
-

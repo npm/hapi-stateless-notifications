@@ -1,6 +1,6 @@
 {
   "name": "hapi-stateless-notifications",
-  "version": "3.1.0",
+  "version": "4.1.0",
   "description": "A simple, explicit-state plugin to pass notices between pages.",
   "main": "index.js",
   "keywords": [
@@ -17,7 +17,7 @@
   "author": "npm, Inc. <support@npmjs.com>",
   "license": "ISC",
   "dependencies": {
-    "bluebird": "^3.0.5",
+    "bluebird": "^3.3.4",
     "debuglog": "^1.0.1",
     "token-facilitator": "^2.2.0"
   },
@@ -34,8 +34,24 @@
   "homepage": "https://github.com/npm/hapi-stateless-notifications#readme",
   "devDependencies": {
     "handlebars": "^4.0.5",
-    "hapi": "^8.8.1",
+    "hapi": "^15.2.0",
     "redis": "^2.5.3",
-    "tap": "^5.1.1"
+    "tap": "^8.0.0",
+    "vision": "^4.1.0",
+    "with-fixtures": "^1.1.0"
+  },
+  "eslintConfig": {
+    "parserOptions": {
+      "ecmaVersion": 6
+    },
+    "rules": {
+      "valid-typeof": "error",
+      "no-undef": "error",
+      "no-unused-vars": "error"
+    },
+    "env": {
+      "browser": true,
+      "node": true
+    }
   }
 }

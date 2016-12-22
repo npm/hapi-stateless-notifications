@@ -1,10 +1,15 @@
+"use strict";
+
 var P = require('bluebird');
 var TokenFacilitator = require('token-facilitator');
-var crypto = require('crypto');
 var debug = require('debuglog')('hapi-stateless-notifications');
+var url = require('url');
+var ignoreErrors = [EvalError, RangeError, ReferenceError, SyntaxError, TypeError];
 
 exports.register = function(server, options, next) {
   options = options || {};
+
+  debug("Registering plugin");
 
   server.ext('onPreHandler', function(request, reply) {
 
@@ -13,33 +18,76 @@ exports.register = function(server, options, next) {
     }
 
     request.saveNotifications = function(promises) {
-      return P.all(promises.map(function(promise) {
-        return P.resolve(promise).then(function(successNotice) {
-          debug("Success '%s' for request '%s'", successNotice, request.id);
-          return P.resolve({
-            notice: successNotice,
-            type: 'success'
-          });
-        }).catch(function(error) {
-          debug("Error '%s' for request '%s'", error.message, request.id);
-          return P.resolve({
-            notice: error.message,
-            type: 'error'
-          });
-        });
-      })).then(putNoticesInRedis(request.redis, options)).then(function (token) {
-        debug("Saved to redis for '%s' with token '%s'", request.id, token);
-        return token;
-      }, function (err) {
-        debug("Error saving to redis for '%s'", request.id);
-        throw err;
+      // Legacy API
+      return reply.saveNotifications(promises).then(function (data) {
+        return data.token
       });
     };
 
     return reply.continue();
   });
 
+  server.decorate('reply', 'saveNotifications', function (promises) {
+    var self = this;
+
+    return P.all(promises.map(function(promise) {
+      return P.resolve(promise).then(function(successNotice) {
+        debug("Success '%s' for request '%s'", successNotice, self.request.id);
+        return P.resolve({
+          notice: successNotice,
+          type: 'success'
+        });
+      }).catch(function(error) {
+        if ((!error.statusCode && ignoreErrors.indexOf(error.constructor) != -1) || error.statusCode >= 500) {
+          throw error;
+        }
+        debug("Error '%s' for request '%s'", error.message, self.request.id);
+        return P.resolve({
+          notice: error.message,
+          type: 'error'
+        });
+      });
+    })).then(function (notices) {
+      var anyFailed = notices.some(function (n) {
+        return n.type == 'error';
+      });
+
+      return putNoticesInRedis(self.request.redis, notices, options).then(function (token) {
+        debug("Saved to redis for '%s' with token '%s'", self.request.id, token);
+        return { token: token, success: !anyFailed };
+      });
+    }, function (err) {
+      debug("Error saving to redis for '%s'", self.request.id);
+      throw err;
+    });
+  });
+
+  server.decorate('reply', 'redirectAndNotify', function (promises, targetUrl) {
+    promises = [].concat(promises);
+    var self = this;
+
+    return this.saveNotifications(promises)
+      .then(function (result) {
+        if (typeof targetUrl == 'object') {
+          targetUrl = targetUrl[result.success ? 'success' : 'failure'];
+        }
+
+        var target = url.parse(targetUrl, true);
+        delete target.search; // url.parse and url.format are kind awful
+
+        if (result.token) {
+          target.query.notice = result.token
+        }
+
+        self.redirect(url.format(target));
+      })
+  });
+
+
   server.ext('onPreResponse', function(request, reply) {
+    // Regenerated requests may not have these. Fail gracefully at least.
+    if (!request.logger || !request.redis) return reply.continue();
+
     if (request.query[options.queryParameter || 'notice']) {
 
       request.logger.info("checking for notices", request.query.notice);
@@ -97,18 +145,16 @@ exports.register = function(server, options, next) {
   return next();
 };
 
-function putNoticesInRedis(redis, options) {
-  return function(notices) {
-    if (notices.length) {
-      var facilitator = new TokenFacilitator({
-        redis: redis
-      });
-      return P.promisify(facilitator.generate, {context: facilitator})({notices: notices}, {
-        timeout: options.timeout || 3600,
-        prefix: options.prefix || 'notice:'
-      });
-    }
-  };
+function putNoticesInRedis(redis, notices, options) {
+  if (notices.length) {
+    var facilitator = new TokenFacilitator({
+      redis: redis
+    });
+    return P.promisify(facilitator.generate, {context: facilitator})({notices: notices}, {
+      timeout: options.timeout || 3600,
+      prefix: options.prefix || 'notice:'
+    });
+  }
 }
 
 exports.register.attributes = {
