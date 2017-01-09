@@ -34,7 +34,7 @@
   "homepage": "https://github.com/npm/hapi-stateless-notifications#readme",
   "devDependencies": {
     "handlebars": "^2.0.0",
-    "hapi": "^15.2.0",
+    "hapi": "^16.0.3",
     "redis": "^2.5.3",
     "tap": "^9.0.2",
     "vision": "^4.1.0",
